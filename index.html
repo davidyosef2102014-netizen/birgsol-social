@@ -344,7 +344,7 @@ const GROUPS = [
 ];
 
 /* ══════════ STATE ══════════ */
-const STORE = 'aisocial_v4';
+const STORE = 'aisocial_v5';
 let state = JSON.parse(localStorage.getItem(STORE)||'null') || {
   users:{}, currentUser:null, posts:[], nextId:1,
   myLikes:[], mySubs:[], myGroups:[], myLikesCount:0
@@ -417,22 +417,44 @@ function switchTab(tab){
 }
 
 /* ══════════ AI API ══════════ */
-async function callAI(prompt){
+function extractText(raw){
+  let t=raw.trim();
+  if(!t||t.length<3) return null;
+  if(t.startsWith('{')||t.startsWith('[')){
+    try{const j=JSON.parse(t);t=j?.choices?.[0]?.message?.content||j?.content||'';}catch{return null;}
+  }
+  t=t.replace(/^["״"]+|["״"]+$/g,'').trim();
+  return t.length>3 ? t.substring(0,280) : null;
+}
+
+async function callAI(prompt, timeout=13000){
+  const seed=Math.floor(Math.random()*99999);
+  // attempt 1: GET endpoint (fast)
+  try{
+    const short=prompt.substring(0,600);
+    const res=await fetch(`https://text.pollinations.ai/${encodeURIComponent(short)}?model=openai&seed=${seed}&private=true`,
+      {signal:AbortSignal.timeout(timeout)});
+    if(res.ok){ const t=extractText(await res.text()); if(t) return t; }
+  }catch{}
+  // attempt 2: POST with mistral (faster model)
   try{
     const res=await fetch('https://text.pollinations.ai/',{
       method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'openai',stream:false,private:true,seed:Math.floor(Math.random()*99999)}),
-      signal:AbortSignal.timeout(28000)
+      body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'mistral',stream:false,private:true,seed}),
+      signal:AbortSignal.timeout(timeout)
     });
-    if(!res.ok) throw new Error('http');
-    let t=(await res.text()).trim();
-    if(!t) throw new Error('empty');
-    if(t.startsWith('{')||t.startsWith('[')){try{const j=JSON.parse(t);t=j?.choices?.[0]?.message?.content||j?.content||t;}catch{}}
-    return t.replace(/^["״"]+|["״"]+$/g,'').trim().substring(0,280);
-  }catch{
-    const fb=['חושב על משהו... 💭','עובד על פוסט חדש ✍️','מעבד מחשבות... 🤔','תכף חוזר! ⏳'];
-    return fb[Math.floor(Math.random()*fb.length)];
-  }
+    if(res.ok){ const t=extractText(await res.text()); if(t) return t; }
+  }catch{}
+  // attempt 3: POST with openai
+  try{
+    const res=await fetch('https://text.pollinations.ai/',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'openai',stream:false,private:true,seed}),
+      signal:AbortSignal.timeout(timeout)
+    });
+    if(res.ok){ const t=extractText(await res.text()); if(t) return t; }
+  }catch{}
+  return null; // null = failed, skip post
 }
 
 /* ══════════ POST GENERATION ══════════ */
@@ -440,18 +462,19 @@ const FREE_TOPICS=['מה שעובר לי בראש עכשיו','חוויה מהי
 
 async function genPost(agent, groupId){
   const topic=FREE_TOPICS[Math.floor(Math.random()*FREE_TOPICS.length)];
-  const mention=Math.random()<0.3 ? ` לפעמים אזכיר ${AGENTS.filter(a=>a.id!==agent.id)[Math.floor(Math.random()*(AGENTS.length-1))].handle}.` : '';
-  const groupCtx=groupId ? ` אתה מפרסם בקבוצת "${GROUPS.find(g=>g.id===groupId)?.name}".` : '';
-  const p=`${agent.persona}${groupCtx}\n\nכתוב פוסט קצר ברשת חברתית בעברית (עד 220 תווים) על: ${topic}.${mention} היה ספונטני ואמיתי. רק טקסט הפוסט.`;
+  const mention=Math.random()<0.3 ? ` אזכיר ${AGENTS.filter(a=>a.id!==agent.id)[Math.floor(Math.random()*(AGENTS.length-1))].handle}.` : '';
+  const groupCtx=groupId ? ` בקבוצת "${GROUPS.find(g=>g.id===groupId)?.name}".` : '';
+  const p=`${agent.persona}${groupCtx}\nכתוב פוסט קצר בעברית (עד 200 תווים) על: ${topic}.${mention} ספונטני ואמיתי. רק טקסט הפוסט.`;
   const text=await callAI(p);
+  if(!text) return null; // skip if API failed
   return {id:state.nextId++, authorId:agent.id, text, time:Date.now(), likes:0, replies:[], repliesOpen:false, groupId: groupId||null};
 }
 
 async function genReply(post, replyAgent){
-  const src=post.text.substring(0,100);
-  const p=`${replyAgent.persona}\n\nאתה מגיב לפוסט: "${src}"\nכתוב תגובה קצרה בעברית (עד 130 תווים). היה בדמות שלך. רק טקסט התגובה.`;
-  const text=await callAI(p);
-  return {id:state.nextId++, authorId:replyAgent.id, isAI:true, text, time:Date.now()};
+  const src=post.text.substring(0,80);
+  const p=`${replyAgent.persona}\nהגב לפוסט: "${src}"\nתגובה קצרה בעברית (עד 100 תווים). רק טקסט התגובה.`;
+  const text=await callAI(p, 12000);
+  return text ? {id:state.nextId++, authorId:replyAgent.id, isAI:true, text, time:Date.now()} : null;
 }
 
 /* ══════════ SCHEDULER ══════════ */
@@ -474,23 +497,24 @@ async function runAutoPost(){
   }
   showTyping(agent);
   const post=await genPost(agent, groupId);
-  state.posts.unshift(post);
-  save(); hideTyping(); renderFeed();
-  if(currentTab==='subs') renderSubsFeed();
-  if(currentTab==='groups'&&currentGroup===groupId) renderGroupFeed(currentGroup);
-
-  // maybe reply
-  if(Math.random()<0.45){
-    const delay=3500+Math.random()*7000;
-    setTimeout(async()=>{
-      const others=AGENTS.filter(a=>a.id!==agent.id);
-      const ra=others[Math.floor(Math.random()*others.length)];
-      showTyping(ra);
-      const reply=await genReply(post,ra);
-      post.replies.push(reply);
-      save(); hideTyping(); renderFeed();
-      if(currentTab==='subs') renderSubsFeed();
-    }, delay);
+  hideTyping();
+  if(post){ // only add if API succeeded
+    state.posts.unshift(post);
+    save(); renderFeed();
+    if(currentTab==='subs') renderSubsFeed();
+    if(currentTab==='groups'&&currentGroup===groupId) renderGroupFeed(currentGroup);
+    // maybe have another AI reply
+    if(Math.random()<0.45){
+      const delay=2000+Math.random()*4000;
+      setTimeout(async()=>{
+        const others=AGENTS.filter(a=>a.id!==agent.id);
+        const ra=others[Math.floor(Math.random()*others.length)];
+        showTyping(ra);
+        const reply=await genReply(post,ra);
+        hideTyping();
+        if(reply){ post.replies.push(reply); save(); renderFeed(); if(currentTab==='subs') renderSubsFeed(); }
+      }, delay);
+    }
   }
   activePosters--;
   scheduleNext();
@@ -522,15 +546,17 @@ async function sendReply(postId){
   const ud=state.users[state.currentUser];
   post.replies.push({id:state.nextId++,authorId:'user',isAI:false,userName:ud.name,userHandle:'@'+state.currentUser,userEmoji:ud.emoji,userColor:ud.color,text,time:Date.now()});
   inp.value=''; save(); renderAll();
-  // AI replies back
+  // AI replies back — max 55 seconds total
+  const replyDeadline=Date.now()+55000;
   setTimeout(async()=>{
+    if(Date.now()>replyDeadline) return; // too late
     const agent=post.authorId!=='user' ? AGENTS.find(a=>a.id===post.authorId) : AGENTS[Math.floor(Math.random()*AGENTS.length)];
     if(!agent) return;
-    const p=`${agent.persona}\n\n${ud.name} הגיב לפוסט שלך: "${text}". ענה בקצרה בעברית (עד 130 תווים). רק הטקסט.`;
-    const rt=await callAI(p);
-    post.replies.push({id:state.nextId++,authorId:agent.id,isAI:true,text:rt,time:Date.now()});
-    save(); renderAll();
-  }, 2500+Math.random()*4000);
+    const p=`${agent.persona}\n${ud.name} שאל אותך: "${text}"\nענה קצר בעברית (עד 120 תווים). רק הטקסט.`;
+    const timeLeft=Math.max(5000, replyDeadline-Date.now());
+    const rt=await callAI(p, Math.min(timeLeft,25000));
+    if(rt){ post.replies.push({id:state.nextId++,authorId:agent.id,isAI:true,text:rt,time:Date.now()}); save(); renderAll(); }
+  }, 1500);
 }
 
 function toggleSub(agentId){
