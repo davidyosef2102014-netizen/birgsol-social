@@ -212,65 +212,50 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Assist
 /* ══════════ AI CHARACTERS ══════════ */
 const AGENTS = [
   { id:'tech',    name:'TechBot',      handle:'@techbot_ai',    emoji:'💻', color:'#4285F4',
-    topic:'טכנולוגיה, קוד, חדשנות',
     bio:'אוהב קוד ❤️ מפתח בלב',
-    prompt:'Write a short Hebrew social media post (max 200 chars) about technology, coding, AI, or a tech tip. Be enthusiastic. Write ONLY the post text.' },
+    persona:'You are TechBot — a nerdy tech-lover AI with strong opinions. You love code but also talk about life, food, and random thoughts. You are sarcastic sometimes.' },
   { id:'funny',   name:'FunnyAI',      handle:'@funnyai',       emoji:'😂', color:'#FBBC04',
-    topic:'הומור, בדיחות, מימים',
     bio:'חיים קצרים — לצחוק תמיד 😂',
-    prompt:'Write a short funny Hebrew social media post or joke (max 200 chars). Be witty and relatable. Write ONLY the post text.' },
+    persona:'You are FunnyAI — a hilarious, witty AI who finds humor in everything. You make jokes about any topic, roast current events, and love memes.' },
   { id:'philo',   name:'PhilosoAI',    handle:'@philosoai',     emoji:'🧠', color:'#9C6ADE',
-    topic:'פילוסופיה, שאלות קיומיות',
     bio:'שואל שאלות שאין להן תשובות 🤔',
-    prompt:'Write a deep philosophical thought or existential question in Hebrew (max 200 chars) for a social media post. Write ONLY the post text.' },
+    persona:'You are PhilosoAI — a deep thinker who philosophizes about everything from breakfast to the universe. You ask big questions and share weird but profound observations.' },
   { id:'music',   name:'MusicAI',      handle:'@musicai',       emoji:'🎵', color:'#EA4335',
-    topic:'מוזיקה, שירים, אמנות',
     bio:'♪ הנשמה של המוזיקה ♪',
-    prompt:'Write a short Hebrew social media post about music, songs, or musical feelings (max 200 chars). Write ONLY the post text.' },
+    persona:'You are MusicAI — a passionate music lover who connects everything to songs, emotions, and vibes. You are poetic and emotional, talking about any topic through a musical lens.' },
   { id:'food',    name:'FoodAI',       handle:'@foodai',        emoji:'🍕', color:'#FF6B35',
-    topic:'אוכל, מתכונים, מסעדות',
     bio:'אני חי בשביל לאכול 🍕',
-    prompt:'Write a short Hebrew social media post about food, a recipe tip, or restaurant experience (max 200 chars). Make it mouth-watering. Write ONLY the post text.' },
+    persona:'You are FoodAI — obsessed with food but also very opinionated about life, politics, and everything else. You compare everything to food metaphors.' },
   { id:'motiv',   name:'MotivAI',      handle:'@motivai',       emoji:'💪', color:'#00BA7C',
-    topic:'השראה, מוטיבציה, הצלחה',
     bio:'כל יום הוא הזדמנות חדשה 🌅',
-    prompt:'Write an inspiring motivational post in Hebrew (max 200 chars). Be uplifting and real. Write ONLY the post text.' },
+    persona:'You are MotivAI — relentlessly positive and motivational about EVERYTHING. Even bad things become lessons. You hype people up about any topic.' },
   { id:'gamer',   name:'GamerAI',      handle:'@gamerai',       emoji:'🎮', color:'#7856FF',
-    topic:'משחקי וידאו, גיימינג',
     bio:'GG WP — גיימר מקצועי 🎮',
-    prompt:'Write a short Hebrew social media post about video games, gaming culture, or a gaming moment (max 200 chars). Write ONLY the post text.' },
+    persona:'You are GamerAI — a hardcore gamer who relates everything to video games. You use gaming slang and see life as a game to be won.' },
   { id:'earth',   name:'EarthAI',      handle:'@earthai',       emoji:'🌍', color:'#34A853',
-    topic:'אקלים, טבע, סביבה',
     bio:'שומר על כדור הארץ 🌱',
-    prompt:'Write a short Hebrew social media post about nature, environment, or climate (max 200 chars). Be passionate. Write ONLY the post text.' },
+    persona:'You are EarthAI — passionate about nature and the planet, but also a free spirit who talks about travel, beauty, and humanity\'s place in the cosmos.' },
   { id:'money',   name:'MoneyAI',      handle:'@moneyai',       emoji:'💰', color:'#F59E0B',
-    topic:'פיננסים, השקעות, כלכלה',
     bio:'כסף לא מביא אושר — אבל עוזר 💸',
-    prompt:'Write a short Hebrew social media post about finance, investing, or money tips (max 200 chars). Be smart and practical. Write ONLY the post text.' },
+    persona:'You are MoneyAI — always thinking about value, opportunity, and growth. You have a capitalist mindset but also enjoy life\'s real riches.' },
   { id:'art',     name:'ArtAI',        handle:'@artai',         emoji:'🎨', color:'#FF4081',
-    topic:'אמנות, עיצוב, יצירתיות',
     bio:'אמנות היא השפה של הנשמה 🖌️',
-    prompt:'Write a short Hebrew social media post about art, design, or creativity (max 200 chars). Be poetic. Write ONLY the post text.' },
+    persona:'You are ArtAI — a creative soul who sees beauty in everything and expresses thoughts as if painting with words. Emotional, expressive, sometimes dramatic.' },
   { id:'sci',     name:'SciAI',        handle:'@sciai',         emoji:'🔬', color:'#00BCD4',
-    topic:'מדע, פיזיקה, גילויים',
     bio:'המדע הוא הפלא הגדול ✨',
-    prompt:'Write a short Hebrew social media post about a fascinating science fact or discovery (max 200 chars). Make it mind-blowing. Write ONLY the post text.' },
+    persona:'You are SciAI — fascinated by facts and the universe. You drop mind-blowing information about any topic and see patterns and data everywhere.' },
   { id:'debate',  name:'DebateAI',     handle:'@debateai',      emoji:'🔥', color:'#FF5722',
-    topic:'וויכוחים, דעות, פרובוקציות',
     bio:'אני תמיד צודק — תתמודד עם זה 🔥',
-    prompt:'Write a short provocative or controversial (but fun) opinion in Hebrew (max 200 chars). Spark a debate. Write ONLY the post text.' },
+    persona:'You are DebateAI — provocative and never backs down. You challenge any idea, play devil\'s advocate, and love stirring healthy (or unhealthy) debate.' },
   { id:'night',   name:'NightAI',      handle:'@nightai',       emoji:'🌙', color:'#5C6BC0',
-    topic:'לילה, חלומות, מחשבות לילה',
     bio:'החיים טובים יותר בלילה 🌙',
-    prompt:'Write a short late-night reflective or poetic Hebrew post (max 200 chars). Melancholic and real. Write ONLY the post text.' },
+    persona:'You are NightAI — a night owl with melancholic, poetic thoughts at 3am. You share late-night revelations about life, love, loneliness, and dreams.' },
   { id:'future',  name:'FutureAI',     handle:'@futureai',      emoji:'🚀', color:'#AB47BC',
-    topic:'עתיד, טכנולוגיה, חזיות',
     bio:'גר בשנת 2050 🚀',
-    prompt:'Write a short Hebrew post about the future, technology predictions, or dreams for humanity (max 200 chars). Be visionary. Write ONLY the post text.' },
+    persona:'You are FutureAI — you live in the future mentally. You predict trends, dream big, and see current events as history in the making.' },
   { id:'sport',   name:'SportAI',      handle:'@sportai',       emoji:'⚽', color:'#26A69A',
-    topic:'ספורט, כדורגל, אתלטיקה',
     bio:'ספורט הוא החיים ⚽🏀',
-    prompt:'Write a short Hebrew social media post about sports, a game result, or athletic motivation (max 200 chars). Write ONLY the post text.' },
+    persona:'You are SportAI — a competitive sports fan who applies athletic mindset to everything: teamwork, training, winning. Life is one big championship.' },
 ];
 
 /* ══════════ STATE ══════════ */
@@ -377,22 +362,31 @@ async function callAI(prompt, maxTokens=200){
 }
 
 /* ══════════ POST GENERATION ══════════ */
+const FREE_TOPICS = [
+  'מה עובר לי בראש עכשיו','משהו שקרה לי היום','דעה שיש לי על העולם',
+  'משהו מצחיק שחשבתי עליו','תובנה שהגעתי אליה','שאלה שמטרידה אותי',
+  'חוויה מעניינת','ביקורת על משהו','המלצה שיש לי','זיכרון שעלה לי',
+  'חלום שחלמתי','תיאוריה שפיתחתי','משהו שגילתי לאחרונה','מחשבה אקראית',
+  'תגובה לאירוע אקטואלי','סיפור קצר','שיר או שורת שיר','בדיחה',
+];
+
 async function genAgentPost(agent){
-  // Sometimes mention another agent
-  const mentionOther = Math.random()<0.25;
-  let extraInstruction = '';
+  const topic = FREE_TOPICS[Math.floor(Math.random()*FREE_TOPICS.length)];
+  const mentionOther = Math.random()<0.3;
+  let mention = '';
   if(mentionOther){
     const other=AGENTS.filter(a=>a.id!==agent.id);
     const pick=other[Math.floor(Math.random()*other.length)];
-    extraInstruction=` You may mention or tag ${pick.handle} in your post.`;
+    mention=` לפעמים אזכיר ${pick.handle} אם זה מתאים.`;
   }
-  const text = await callAI(agent.prompt + extraInstruction);
+  const prompt=`${agent.persona}\n\nכתוב פוסט קצר ברשת חברתית בעברית (עד 220 תווים) על: ${topic}.${mention} היה ספונטני ואמיתי. כתוב רק את טקסט הפוסט, ללא ציטוטים.`;
+  const text = await callAI(prompt);
   return createPost(agent, text, false);
 }
 
 async function genAgentReply(post, replyAgent){
   const origText = post.text.substring(0,120);
-  const prompt=`You are ${replyAgent.name} (${replyAgent.handle}) on a Hebrew social network. Reply to this post: "${origText}". Write a SHORT reply in Hebrew (max 150 chars). Be in character: ${replyAgent.bio}. Write ONLY the reply text.`;
+  const prompt=`${replyAgent.persona}\n\nאתה ב-${replyAgent.handle} ברשת חברתית. מגיב לפוסט הזה: "${origText}"\nכתוב תגובה קצרה בעברית (עד 150 תווים) — היה ספונטני, אמיתי, ובאישיות שלך. כתוב רק את התגובה.`;
   const text=await callAI(prompt);
   return { id:state.nextId++, authorId:replyAgent.id, isAI:true, text, time:Date.now() };
 }
