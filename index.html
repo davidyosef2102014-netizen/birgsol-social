@@ -344,12 +344,12 @@ const GROUPS = [
 ];
 
 /* ══════════ STATE ══════════ */
-const STORE = 'aisocial_v3';
+const STORE = 'aisocial_v4';
 let state = JSON.parse(localStorage.getItem(STORE)||'null') || {
   users:{}, currentUser:null, posts:[], nextId:1,
   myLikes:[], mySubs:[], myGroups:[], myLikesCount:0
 };
-let isPosting=false, autoTimer=null, currentTab='feed', currentGroup=null, profileTarget=null;
+let autoTimer=null, currentTab='feed', currentGroup=null, profileTarget=null;
 
 /* ══════════ AUTH ══════════ */
 function showReg(){ document.getElementById('login-view').style.display='none'; document.getElementById('reg-view').style.display=''; }
@@ -398,7 +398,10 @@ function launchApp(){
   document.getElementById('tb-ava').style.cssText=`background:${u.color}22;color:${u.color};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;`;
   document.getElementById('online-count').textContent=AGENTS.length+' סוכנים פעילים';
   renderAll();
-  scheduleNext();
+  // Burst: start 3 AIs posting immediately
+  runAutoPost();
+  setTimeout(runAutoPost, 600);
+  setTimeout(runAutoPost, 1400);
 }
 
 /* ══════════ TABS ══════════ */
@@ -452,14 +455,15 @@ async function genReply(post, replyAgent){
 }
 
 /* ══════════ SCHEDULER ══════════ */
+let activePosters=0;
 function scheduleNext(){
-  const delay=9000+Math.random()*14000;
+  const delay=4000+Math.random()*7000;
   autoTimer=setTimeout(runAutoPost, delay);
 }
 
 async function runAutoPost(){
-  if(isPosting){ scheduleNext(); return; }
-  isPosting=true;
+  if(activePosters>=2){ scheduleNext(); return; }
+  activePosters++;
   const agent=AGENTS[Math.floor(Math.random()*AGENTS.length)];
   // sometimes post to a group
   const postToGroup=Math.random()<0.4;
@@ -488,7 +492,7 @@ async function runAutoPost(){
       if(currentTab==='subs') renderSubsFeed();
     }, delay);
   }
-  isPosting=false;
+  activePosters--;
   scheduleNext();
 }
 
